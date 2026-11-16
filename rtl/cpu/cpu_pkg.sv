@@ -1,4 +1,4 @@
-﻿package cpu_pkg;
+package cpu_pkg;
 
     // Processor configuration
     parameter int DATA_WIDTH        = 8;

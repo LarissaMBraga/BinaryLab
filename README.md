@@ -1,4 +1,4 @@
-﻿# BINARY LAB
+# BINARY LAB
 
 A custom 8-bit processor designed from scratch using SystemVerilog.
 
