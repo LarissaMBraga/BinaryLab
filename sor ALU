@@ -1,0 +1,6 @@
+ README.md                |   4 [32m+[m[31m-[m
+ rtl/alu/alu.sv           |  72 [32m+++++++++++++++++++++++++[m
+ rtl/cpu/cpu_pkg.sv       |   2 [32m+[m[31m-[m
+ rtl/cpu/isa_pkg.sv       |  83 [31m-----------------------------[m
+ testbench/unit/tb_alu.sv | 136 [32m+++++++++++++++++++++++++++++++++++++++++++++++[m
+ 5 files changed, 211 insertions(+), 86 deletions(-)
