@@ -101,6 +101,8 @@ foreach ($program in $cpuPrograms) {
 
 $cpuSources = @(
     "rtl/cpu/cpu_pkg.sv",
+    "rtl/bus/address_decoder.sv",
+    "rtl/bus/memory_bus.sv",
     "rtl/cpu/program_counter.sv",
     "rtl/memory/instruction_memory.sv",
     "rtl/memory/data_memory.sv",
@@ -112,6 +114,10 @@ $cpuSources = @(
 )
 
 Write-Host "`n=== UNIT TESTS ===" -ForegroundColor Cyan
+Invoke-Simulation -Top "tb_address_decoder" -Testbench "testbench/unit/tb_address_decoder.sv" -Output "build/tb_address_decoder.vvp" -Sources @("rtl/bus/address_decoder.sv")
+
+Invoke-Simulation -Top "tb_memory_bus" -Testbench "testbench/unit/tb_memory_bus.sv" -Output "build/tb_memory_bus.vvp" -Sources @("rtl/bus/address_decoder.sv", "rtl/memory/data_memory.sv", "rtl/io/gpio.sv", "rtl/bus/memory_bus.sv")
+
 
 Invoke-Simulation -Top "tb_alu" -Testbench "testbench/unit/tb_alu.sv" -Output "build/tb_alu.vvp" -Sources @("rtl/cpu/cpu_pkg.sv", "rtl/alu/alu.sv")
 
