@@ -1,3 +1,4 @@
+
 module control_unit (
     input  logic clk,
     input  logic reset,
@@ -19,6 +20,7 @@ module control_unit (
     output logic register_write_enable,
     output logic memory_read_enable,
     output logic memory_write_enable,
+    output logic flags_write_enable,
 
     output logic alu_operand_immediate,
     output cpu_pkg::alu_operation_t alu_operation,
@@ -105,6 +107,7 @@ module control_unit (
         register_write_enable = 1'b0;
         memory_read_enable = 1'b0;
         memory_write_enable = 1'b0;
+        flags_write_enable = 1'b0;
 
         alu_operand_immediate = 1'b0;
         alu_operation = ALU_PASS;
@@ -149,37 +152,44 @@ module control_unit (
 
                     OP_ADD: begin
                         alu_operation = ALU_ADD;
+                        flags_write_enable = 1'b1;
                         next_state = WRITEBACK;
                     end
 
-                    OP_SUB, OP_CMP: begin
+                    OP_SUB: begin
                         alu_operation = ALU_SUB;
+                        flags_write_enable = 1'b1;
+                        next_state = WRITEBACK;
+                    end
 
-                        if (opcode == OP_CMP) begin
-                            next_state = FETCH;
-                        end else begin
-                            next_state = WRITEBACK;
-                        end
+                    OP_CMP: begin
+                        alu_operation = ALU_SUB;
+                        flags_write_enable = 1'b1;
+                        next_state = FETCH;
                     end
 
                     OP_AND: begin
                         alu_operation = ALU_AND;
+                        flags_write_enable = 1'b1;
                         next_state = WRITEBACK;
                     end
 
                     OP_OR: begin
                         alu_operation = ALU_OR;
+                        flags_write_enable = 1'b1;
                         next_state = WRITEBACK;
                     end
 
                     OP_XOR: begin
                         alu_operation = ALU_XOR;
+                        flags_write_enable = 1'b1;
                         next_state = WRITEBACK;
                     end
 
                     OP_ADDI: begin
                         alu_operation = ALU_ADD;
                         alu_operand_immediate = 1'b1;
+                        flags_write_enable = 1'b1;
                         next_state = WRITEBACK;
                     end
 
