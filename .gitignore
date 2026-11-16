@@ -1,5 +1,8 @@
 ﻿build/
 dist/
+.venv/
+venv/
+
 *.o
 *.a
 *.so
@@ -18,9 +21,15 @@ dist/
 *.edif
 *.asc
 
+*.log
+*.tmp
+
+__pycache__/
+*.py[cod]
+
+programs/binaries/*.bin
+
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-*.log
-*.tmp
