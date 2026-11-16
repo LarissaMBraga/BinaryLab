@@ -177,50 +177,20 @@ module cpu #(
         {8'b0, register_read_data_b} +
         {{10{memory_offset[5]}}, memory_offset};
 
-    assign gpio_address_selected =
-        (data_memory_address == GPIO_DATA_ADDRESS) ||
-        (data_memory_address == GPIO_DIRECTION_ADDRESS);
-
-    assign ram_read_enable =
-        memory_read_enable && !gpio_address_selected;
-
-    assign ram_write_enable =
-        memory_write_enable && !gpio_address_selected;
-
-    assign gpio_write_enable =
-        memory_write_enable && gpio_address_selected;
-
-    data_memory #(
-        .MEMORY_DEPTH(DATA_MEMORY_DEPTH)
-    ) data_memory_instance (
-        .clk(clk),
-        .read_enable(ram_read_enable),
-        .write_enable(ram_write_enable),
-        .address(data_memory_address),
-        .write_data(register_read_data_a),
-        .read_data(ram_read_data)
-    );
-
-    gpio gpio_instance (
+    memory_bus #(
+        .DATA_MEMORY_DEPTH(DATA_MEMORY_DEPTH)
+    ) memory_bus_instance (
         .clk(clk),
         .reset(reset),
-        .write_enable(gpio_write_enable),
-        .address(data_memory_address[7:0]),
+        .read_enable(memory_read_enable),
+        .write_enable(memory_write_enable),
+        .address(data_memory_address),
         .write_data(register_read_data_a),
-        .input_data(gpio_input),
-        .read_data(gpio_read_data),
-        .output_data(gpio_output),
-        .direction(gpio_direction)
+        .read_data(data_memory_read_data),
+        .gpio_input(gpio_input),
+        .gpio_output(gpio_output),
+        .gpio_direction(gpio_direction)
     );
-
-    always_comb begin
-        if (gpio_address_selected) begin
-            data_memory_read_data = gpio_read_data;
-        end else begin
-            data_memory_read_data = ram_read_data;
-        end
-    end
-
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
             data_memory_read_register <= '0;

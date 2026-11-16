@@ -83,3 +83,15 @@ The validation suite builds the C assembler, assembles valid example programs, v
 Instructions are 16 bits wide. Binary output is written as two bytes per instruction in big-endian order.
 
 The CPU instruction memory supports both binary (`BIN`) and hexadecimal (`HEX`) initialization formats.
+## Memory bus
+
+The CPU accesses data memory and memory-mapped peripherals through the shared memory bus.
+
+The bus is implemented in:
+
+- `rtl/bus/address_decoder.sv`
+- `rtl/bus/memory_bus.sv`
+
+The address decoder selects RAM or GPIO. GPIO remains mapped to `0x00F0` (data) and `0x00F1` (direction).
+
+See [Memory Bus Architecture](memory-bus.md) for the address map and signal details.

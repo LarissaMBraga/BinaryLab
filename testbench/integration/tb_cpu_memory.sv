@@ -71,9 +71,9 @@ module tb_cpu_memory;
             $fatal(1);
         end
 
-        if (dut.data_memory_instance.memory[10] !== 8'd42) begin
+        if (dut.memory_bus_instance.data_memory_instance.memory[10] !== 8'd42) begin
             $display("FAIL: Memory address 10 expected 42, got %d",
-                dut.data_memory_instance.memory[10]);
+                dut.memory_bus_instance.data_memory_instance.memory[10]);
             $fatal(1);
         end
 
@@ -83,7 +83,7 @@ module tb_cpu_memory;
         $display("R1:          %d", dut.register_file_instance.registers[1]);
         $display("R2:          %d", dut.register_file_instance.registers[2]);
         $display("R3 (LD):     %d", dut.register_file_instance.registers[3]);
-        $display("Memory[10]:  %d", dut.data_memory_instance.memory[10]);
+        $display("Memory[10]:  %d", dut.memory_bus_instance.data_memory_instance.memory[10]);
         $display("Cycles:      %d", cycles);
         $display("Status: HALTED");
         $display("-----------------------------------");

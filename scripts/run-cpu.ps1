@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$Source = "programs/examples/all_instructions.asm"
 )
 
@@ -21,9 +21,12 @@ if ($LASTEXITCODE -ne 0) {
 
 & iverilog -g2012 -s tb_cpu_all_instructions -o $simulationPath `
     rtl/cpu/cpu_pkg.sv `
+    rtl/bus/address_decoder.sv `
+    rtl/bus/memory_bus.sv `
     rtl/cpu/program_counter.sv `
     rtl/memory/instruction_memory.sv `
     rtl/memory/data_memory.sv `
+    rtl/io/gpio.sv `
     rtl/registers/register_file.sv `
     rtl/alu/alu.sv `
     rtl/control/control_unit.sv `

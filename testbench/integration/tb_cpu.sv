@@ -95,9 +95,9 @@ module tb_cpu;
             $fatal(1);
         end
 
-        if (dut.data_memory_instance.memory[0] !== 8'd8) begin
+        if (dut.memory_bus_instance.data_memory_instance.memory[0] !== 8'd8) begin
             $display("FAIL: Memory[0] expected 8, got %d",
-                dut.data_memory_instance.memory[0]);
+                dut.memory_bus_instance.data_memory_instance.memory[0]);
             $fatal(1);
         end
 
@@ -112,7 +112,7 @@ module tb_cpu;
         $display("R1:       %d", dut.register_file_instance.registers[1]);
         $display("R2:       %d", dut.register_file_instance.registers[2]);
         $display("R3:       %d", dut.register_file_instance.registers[3]);
-        $display("Memory 0: %d", dut.data_memory_instance.memory[0]);
+        $display("Memory 0: %d", dut.memory_bus_instance.data_memory_instance.memory[0]);
         $display("Zero flag: %b", dut.flags_register.zero);
         $display("PC:        %d", pc);
         $display("Cycles:    %d", cycles);

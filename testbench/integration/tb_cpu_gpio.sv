@@ -54,7 +54,7 @@ module tb_cpu_gpio;
                 if (gpio_output !== 8'h05)
                     $fatal(1, "GPIO output register test failed");
 
-                if (dut.data_memory_instance.memory[10] !== 8'h0F)
+                if (dut.memory_bus_instance.data_memory_instance.memory[10] !== 8'h0F)
                     $fatal(1, "GPIO input/output readback test failed");
 
                 $display("GPIO MEMORY-MAPPED I/O TEST PASSED");

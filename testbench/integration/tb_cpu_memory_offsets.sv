@@ -54,10 +54,10 @@ module tb_cpu_memory_offsets;
         if (dut.register_file_instance.registers[4] !== 8'd42)
             $fatal(1, "Positive offset load failed");
 
-        if (dut.data_memory_instance.memory[10] !== 8'd42)
+        if (dut.memory_bus_instance.data_memory_instance.memory[10] !== 8'd42)
             $fatal(1, "Negative offset store failed");
 
-        if (dut.data_memory_instance.memory[15] !== 8'd42)
+        if (dut.memory_bus_instance.data_memory_instance.memory[15] !== 8'd42)
             $fatal(1, "Positive offset store failed");
 
         $display("CPU MEMORY OFFSET TEST PASSED");

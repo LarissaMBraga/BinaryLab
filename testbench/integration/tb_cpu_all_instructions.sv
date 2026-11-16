@@ -89,9 +89,9 @@ module tb_cpu_all_instructions;
             $fatal(1);
         end
 
-        if (dut.data_memory_instance.memory[11] !== 8'd15) begin
+        if (dut.memory_bus_instance.data_memory_instance.memory[11] !== 8'd15) begin
             $display("FAIL: Memory[11] expected 15, got %d",
-                dut.data_memory_instance.memory[11]);
+                dut.memory_bus_instance.data_memory_instance.memory[11]);
             $fatal(1);
         end
 
@@ -104,7 +104,7 @@ module tb_cpu_all_instructions;
         $display("R4:        %d", dut.register_file_instance.registers[4]);
         $display("R5:        %d", dut.register_file_instance.registers[5]);
         $display("R6:        %d", dut.register_file_instance.registers[6]);
-        $display("Memory[11]: %d", dut.data_memory_instance.memory[11]);
+        $display("Memory[11]: %d", dut.memory_bus_instance.data_memory_instance.memory[11]);
         $display("PC:        %d", pc);
         $display("Cycles:    %d", cycles);
         $display("Status:    HALTED");
