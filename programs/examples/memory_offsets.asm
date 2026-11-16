@@ -1,0 +1,7 @@
+ADDI R1, 42
+ADDI R2, 12
+ST R1, [R2 - 2]
+LD R3, [R2 - 2]
+ST R1, [R2 + 3]
+LD R4, [R2 + 3]
+HALT

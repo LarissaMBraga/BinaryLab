@@ -3,7 +3,8 @@
 
 module instruction_memory #(
     parameter MEMORY_DEPTH = 65536,
-    parameter INIT_FILE = ""
+    parameter INIT_FILE = "",
+    parameter INIT_FORMAT = "HEX"
 ) (
     input  logic        read_enable,
     input  logic [15:0] address,
@@ -12,9 +13,74 @@ module instruction_memory #(
 
     logic [7:0] memory [0:MEMORY_DEPTH-1];
 
+    integer file_handle;
+    integer file_byte;
+    integer byte_count;
+
     initial begin
         if (INIT_FILE != "") begin
-            $readmemh(INIT_FILE, memory);
+
+            if (INIT_FORMAT == "HEX") begin
+                $readmemh(INIT_FILE, memory);
+            end
+
+            else if (INIT_FORMAT == "BIN") begin
+
+                file_handle = $fopen(INIT_FILE, "rb");
+
+                if (file_handle == 0) begin
+                    $fatal(
+                        1,
+                        "Unable to open binary instruction file: %s",
+                        INIT_FILE
+                    );
+                end
+
+                byte_count = 0;
+
+                while (1) begin
+                    file_byte = $fgetc(file_handle);
+
+                    if (file_byte == -1) begin
+                        break;
+                    end
+
+                    if (byte_count >= MEMORY_DEPTH) begin
+                        $fclose(file_handle);
+                        $fatal(
+                            1,
+                            "Binary instruction file exceeds memory capacity."
+                        );
+                    end
+
+                    memory[byte_count] = file_byte[7:0];
+                    byte_count = byte_count + 1;
+                end
+
+                $fclose(file_handle);
+
+                if (byte_count % 2 != 0) begin
+                    $fatal(
+                        1,
+                        "Invalid binary program: instruction data must contain complete 16-bit words."
+                    );
+                end
+
+                $display(
+                    "Loaded %0d bytes from binary file: %s",
+                    byte_count,
+                    INIT_FILE
+                );
+            end
+
+            else begin
+                $fatal(
+                    1,
+                    "Unsupported instruction memory format: %s",
+                    INIT_FORMAT
+                );
+            end
+
         end
     end
 

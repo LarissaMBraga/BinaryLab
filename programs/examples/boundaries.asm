@@ -1,0 +1,5 @@
+ADDI R1, -128
+ADDI R2, 127
+ST R1, [R2 + 31]
+LD R3, [R2 - 32]
+HALT

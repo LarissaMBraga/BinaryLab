@@ -1,12 +1,14 @@
-
 module cpu #(
     parameter integer INSTRUCTION_MEMORY_DEPTH = cpu_pkg::MEMORY_DEPTH,
     parameter integer DATA_MEMORY_DEPTH = cpu_pkg::MEMORY_DEPTH,
-    parameter INSTRUCTION_INIT_FILE = ""
+    parameter INSTRUCTION_INIT_FILE = "",
+    parameter INSTRUCTION_INIT_FORMAT = "HEX"
 ) (
     input  logic clk,
     input  logic reset,
-
+    input  logic [7:0] gpio_input,
+    output logic [7:0] gpio_output,
+    output logic [7:0] gpio_direction,
     output logic [cpu_pkg::ADDRESS_WIDTH-1:0] pc,
     output logic [2:0] state,
     output logic halted,
@@ -15,8 +17,11 @@ module cpu #(
 
     import cpu_pkg::*;
 
-    localparam logic [2:0] STATE_FETCH   = 3'd0;
+    localparam logic [2:0] STATE_FETCH = 3'd0;
     localparam logic [2:0] STATE_EXECUTE = 3'd2;
+
+    localparam logic [ADDRESS_WIDTH-1:0] GPIO_DATA_ADDRESS = 16'h00F0;
+    localparam logic [ADDRESS_WIDTH-1:0] GPIO_DIRECTION_ADDRESS = 16'h00F1;
 
     logic [INSTRUCTION_WIDTH-1:0] fetched_instruction;
     logic [INSTRUCTION_WIDTH-1:0] instruction_register;
@@ -36,7 +41,6 @@ module cpu #(
 
     logic alu_operand_immediate;
     alu_operation_t alu_operation;
-
     logic writeback_from_memory;
 
     logic pc_enable;
@@ -45,7 +49,6 @@ module cpu #(
 
     logic [DATA_WIDTH-1:0] register_read_data_a;
     logic [DATA_WIDTH-1:0] register_read_data_b;
-
     logic [DATA_WIDTH-1:0] register_write_data;
 
     logic [DATA_WIDTH-1:0] alu_operand_a;
@@ -58,8 +61,13 @@ module cpu #(
     logic [ADDRESS_WIDTH-1:0] data_memory_address;
     logic [DATA_WIDTH-1:0] data_memory_read_data;
     logic [DATA_WIDTH-1:0] data_memory_read_register;
+    logic [DATA_WIDTH-1:0] ram_read_data;
+    logic [DATA_WIDTH-1:0] gpio_read_data;
 
-    // Program Counter
+    logic gpio_address_selected;
+    logic ram_read_enable;
+    logic ram_write_enable;
+    logic gpio_write_enable;
 
     program_counter program_counter_instance (
         .clk(clk),
@@ -70,18 +78,15 @@ module cpu #(
         .pc(pc)
     );
 
-    // Instruction Memory
-
     instruction_memory #(
         .MEMORY_DEPTH(INSTRUCTION_MEMORY_DEPTH),
-        .INIT_FILE(INSTRUCTION_INIT_FILE)
+        .INIT_FILE(INSTRUCTION_INIT_FILE),
+        .INIT_FORMAT(INSTRUCTION_INIT_FORMAT)
     ) instruction_memory_instance (
         .read_enable(1'b1),
         .address(pc),
         .instruction(fetched_instruction)
     );
-
-    // Instruction Register
 
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
@@ -91,60 +96,44 @@ module cpu #(
         end
     end
 
-    // Control Unit
-
     control_unit control_unit_instance (
         .clk(clk),
         .reset(reset),
         .instruction(instruction_register),
         .pc_current(pc),
         .flags(flags_register),
-
         .state(state),
-
         .destination_register(destination_register),
         .source_register(source_register),
         .base_register(base_register),
-
         .immediate(immediate),
         .memory_offset(memory_offset),
         .branch_offset(branch_offset),
-
         .register_write_enable(register_write_enable),
         .memory_read_enable(memory_read_enable),
         .memory_write_enable(memory_write_enable),
         .flags_write_enable(flags_write_enable),
-
         .alu_operand_immediate(alu_operand_immediate),
         .alu_operation(alu_operation),
-
         .writeback_from_memory(writeback_from_memory),
-
         .pc_enable(pc_enable),
         .pc_load_enable(pc_load_enable),
         .pc_load_address(pc_load_address),
-
         .halted(halted),
         .illegal_instruction(illegal_instruction)
     );
 
-    // Register File
-
     register_file register_file_instance (
         .clk(clk),
         .reset(reset),
-
         .write_enable(register_write_enable),
         .write_address(destination_register),
         .write_data(register_write_data),
-
         .read_address_a(destination_register),
         .read_address_b(source_register),
         .read_data_a(register_read_data_a),
         .read_data_b(register_read_data_b)
     );
-
-    // ALU Operand Selection
 
     always_comb begin
         if (instruction_register[15:12] == OP_MOV) begin
@@ -160,8 +149,6 @@ module cpu #(
         end
     end
 
-    // Arithmetic Logic Unit
-
     alu alu_instance (
         .operand_a(alu_operand_a),
         .operand_b(alu_operand_b),
@@ -169,8 +156,6 @@ module cpu #(
         .result(alu_result),
         .flags(alu_flags)
     );
-
-    // ALU Result Register
 
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
@@ -180,8 +165,6 @@ module cpu #(
         end
     end
 
-    // Flags Register
-
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
             flags_register <= '0;
@@ -190,26 +173,53 @@ module cpu #(
         end
     end
 
-    // Data Memory Address Calculation
-
     assign data_memory_address =
         {8'b0, register_read_data_b} +
         {{10{memory_offset[5]}}, memory_offset};
 
-    // Data Memory
+    assign gpio_address_selected =
+        (data_memory_address == GPIO_DATA_ADDRESS) ||
+        (data_memory_address == GPIO_DIRECTION_ADDRESS);
+
+    assign ram_read_enable =
+        memory_read_enable && !gpio_address_selected;
+
+    assign ram_write_enable =
+        memory_write_enable && !gpio_address_selected;
+
+    assign gpio_write_enable =
+        memory_write_enable && gpio_address_selected;
 
     data_memory #(
         .MEMORY_DEPTH(DATA_MEMORY_DEPTH)
     ) data_memory_instance (
         .clk(clk),
-        .read_enable(memory_read_enable),
-        .write_enable(memory_write_enable),
+        .read_enable(ram_read_enable),
+        .write_enable(ram_write_enable),
         .address(data_memory_address),
         .write_data(register_read_data_a),
-        .read_data(data_memory_read_data)
+        .read_data(ram_read_data)
     );
 
-    // Data Memory Read Register
+    gpio gpio_instance (
+        .clk(clk),
+        .reset(reset),
+        .write_enable(gpio_write_enable),
+        .address(data_memory_address[7:0]),
+        .write_data(register_read_data_a),
+        .input_data(gpio_input),
+        .read_data(gpio_read_data),
+        .output_data(gpio_output),
+        .direction(gpio_direction)
+    );
+
+    always_comb begin
+        if (gpio_address_selected) begin
+            data_memory_read_data = gpio_read_data;
+        end else begin
+            data_memory_read_data = ram_read_data;
+        end
+    end
 
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
@@ -218,8 +228,6 @@ module cpu #(
             data_memory_read_register <= data_memory_read_data;
         end
     end
-
-    // Writeback Selection
 
     always_comb begin
         if (writeback_from_memory) begin
