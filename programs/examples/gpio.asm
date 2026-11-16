@@ -1,0 +1,10 @@
+ADDI R1, 5
+ADDI R2, 127
+ADDI R2, 113
+ADDI R3, 5
+ST R3, [R2 + 1]
+ST R1, [R2 + 0]
+LD R4, [R2 + 0]
+ADDI R5, 10
+ST R4, [R5 + 0]
+HALT

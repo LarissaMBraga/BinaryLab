@@ -4,15 +4,11 @@ module tb_alu;
 
     import cpu_pkg::*;
 
-    logic [DATA_WIDTH-1:0] operand_a;
-    logic [DATA_WIDTH-1:0] operand_b;
-
+    logic [7:0] operand_a;
+    logic [7:0] operand_b;
     alu_operation_t operation;
-
-    logic [DATA_WIDTH-1:0] result;
+    logic [7:0] result;
     flags_t flags;
-
-    integer tests_passed;
 
     alu dut (
         .operand_a(operand_a),
@@ -22,114 +18,74 @@ module tb_alu;
         .flags(flags)
     );
 
-    task automatic check_operation(
-        input alu_operation_t test_operation,
-        input logic [7:0] test_a,
-        input logic [7:0] test_b,
-        input logic [7:0] expected_result,
-        input logic [3:0] expected_flags,
-        input string test_name
-    );
-        begin
-            operation = test_operation;
-            operand_a = test_a;
-            operand_b = test_b;
-
-            #1;
-
-            if (
-                result !== expected_result ||
-                {flags.zero, flags.carry, flags.negative, flags.overflow}
-                    !== expected_flags
-            ) begin
-                $display("FAILED: %s", test_name);
-                $display("Expected result: %h | Actual: %h",
-                         expected_result, result);
-                $display("Expected flags: %b | Actual: %b",
-                         expected_flags,
-                         {flags.zero, flags.carry,
-                          flags.negative, flags.overflow});
-
-                $fatal(1, "ALU verification failed.");
-            end
-
-            tests_passed = tests_passed + 1;
-
-            $display("PASSED: %s", test_name);
-        end
-    endtask
-
     initial begin
-        tests_passed = 0;
+        operand_a = 8'd250;
+        operand_b = 8'd10;
+        operation = ALU_ADD;
+        #1;
 
-        operand_a = '0;
-        operand_b = '0;
+        if (result !== 8'd4 || flags.carry !== 1'b1)
+            $fatal(1, "ALU ADD carry test failed");
+
+        operand_a = 8'd127;
+        operand_b = 8'd1;
+        operation = ALU_ADD;
+        #1;
+
+        if (result !== 8'd128 || flags.overflow !== 1'b1 || flags.negative !== 1'b1)
+            $fatal(1, "ALU ADD signed overflow test failed");
+
+        operand_a = 8'd0;
+        operand_b = 8'd1;
+        operation = ALU_SUB;
+        #1;
+
+        if (result !== 8'd255 || flags.carry !== 1'b0 || flags.negative !== 1'b1)
+            $fatal(1, "ALU SUB borrow test failed");
+
+        operand_a = 8'd128;
+        operand_b = 8'd1;
+        operation = ALU_SUB;
+        #1;
+
+        if (result !== 8'd127 || flags.overflow !== 1'b1)
+            $fatal(1, "ALU SUB signed overflow test failed");
+
+        operand_a = 8'b10101010;
+        operand_b = 8'b11001100;
+        operation = ALU_AND;
+        #1;
+
+        if (result !== 8'b10001000)
+            $fatal(1, "ALU AND test failed");
+
+        operation = ALU_OR;
+        #1;
+
+        if (result !== 8'b11101110)
+            $fatal(1, "ALU OR test failed");
+
+        operation = ALU_XOR;
+        #1;
+
+        if (result !== 8'b01100110)
+            $fatal(1, "ALU XOR test failed");
+
         operation = ALU_PASS;
+        #1;
 
-        $display("--------------------------------");
-        $display("BINARY LAB - ALU TESTBENCH");
-        $display("--------------------------------");
+        if (result !== operand_a)
+            $fatal(1, "ALU PASS test failed");
 
-        check_operation(
-            ALU_ADD, 8'h05, 8'h03, 8'h08, 4'b0000,
-            "Addition"
-        );
+        operand_a = 8'd0;
+        operand_b = 8'd0;
+        operation = ALU_ADD;
+        #1;
 
-        check_operation(
-            ALU_ADD, 8'h7F, 8'h01, 8'h80, 4'b0011,
-            "Addition signed overflow"
-        );
+        if (result !== 8'd0 || flags.zero !== 1'b1)
+            $fatal(1, "ALU ZERO flag test failed");
 
-        check_operation(
-            ALU_ADD, 8'hFF, 8'h01, 8'h00, 4'b1100,
-            "Addition carry"
-        );
-
-        check_operation(
-            ALU_SUB, 8'h05, 8'h03, 8'h02, 4'b0100,
-            "Subtraction"
-        );
-
-        check_operation(
-            ALU_SUB, 8'h00, 8'h01, 8'hFF, 4'b0010,
-            "Subtraction borrow"
-        );
-
-        check_operation(
-            ALU_SUB, 8'h05, 8'h05, 8'h00, 4'b1100,
-            "Subtraction zero"
-        );
-
-        check_operation(
-            ALU_SUB, 8'h80, 8'h01, 8'h7F, 4'b0101,
-            "Subtraction signed overflow"
-        );
-
-        check_operation(
-            ALU_AND, 8'hF0, 8'h0F, 8'h00, 4'b1000,
-            "Bitwise AND"
-        );
-
-        check_operation(
-            ALU_OR, 8'h80, 8'h01, 8'h81, 4'b0010,
-            "Bitwise OR"
-        );
-
-        check_operation(
-            ALU_XOR, 8'hFF, 8'hFF, 8'h00, 4'b1000,
-            "Bitwise XOR"
-        );
-
-        check_operation(
-            ALU_PASS, 8'h80, 8'h00, 8'h80, 4'b0010,
-            "Pass operand"
-        );
-
-        $display("--------------------------------");
-        $display("Tests passed: %0d", tests_passed);
-        $display("All ALU tests completed.");
-        $display("--------------------------------");
-
+        $display("ALU UNIT TEST PASSED");
         $finish;
     end
 

@@ -1,0 +1,4 @@
+ADDI R1, 10
+ADDI R2, 20
+ST R1, [R2 - 33]
+HALT
