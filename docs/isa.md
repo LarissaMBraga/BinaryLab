@@ -4,16 +4,14 @@
 
 Every instruction is 16 bits wide.
 
-The instruction is divided into fields:
-
 | Bits | Field | Width |
 |---|---|---|
 | 15-12 | Opcode | 4 bits |
 | 11-9 | Register / destination | 3 bits |
-| 8-6 | Register / base | 3 bits |
+| 8-6 | Register / base / source | 3 bits |
 | 5-0 | Operand / reserved | 6 bits |
 
-The interpretation of the fields depends on the instruction format.
+The interpretation depends on the instruction format.
 
 ## 2. Instruction Formats
 
@@ -26,15 +24,11 @@ Used by register-to-register operations.
 | 15-12 | Opcode |
 | 11-9 | Destination register |
 | 8-6 | Source register |
-| 5-0 | Reserved (must be zero) |
+| 5-0 | Reserved, must be zero |
 
-Example:
+Example: `ADD R1, R2`
 
-ADD R1, R2
-
-The operation is:
-
-R1 = R1 + R2
+`R1 = R1 + R2`
 
 ### Immediate Format (I)
 
@@ -46,15 +40,9 @@ Used by instructions containing an immediate value.
 | 11-9 | Destination register |
 | 8-0 | Signed immediate |
 
-The immediate value is sign-extended to 8 bits.
+Example: `ADDI R1, 5`
 
-Example:
-
-ADDI R1, 5
-
-The operation is:
-
-R1 = R1 + 5
+`R1 = R1 + 5`
 
 ### Memory Format (M)
 
@@ -67,11 +55,7 @@ Used by load and store instructions.
 | 8-6 | Base register |
 | 5-0 | Signed offset |
 
-The effective address is calculated as:
-
-EA = Base Register + SignExtendedOffset
-
-The effective address is 16 bits wide.
+`EA = Base Register + SignExtendedOffset`
 
 ### Branch Format (B)
 
@@ -82,11 +66,40 @@ Used by control-flow instructions.
 | 15-12 | Opcode |
 | 11-0 | Signed relative offset |
 
-The branch target is calculated as:
-
-Target = PC_after_fetch + (SignExtendedOffset * 2)
+`Target = PC_after_fetch + (SignExtendedOffset * 2)`
 
 The offset is measured in instructions, not bytes.
+
+### Extended Format (EXT)
+
+The `EXT` opcode introduces additional ALU operations.
+
+The extended encoding uses:
+- Bits 11-9: extended operation selector.
+- Bits 8-6: destination register.
+- Bits 5-3: source register.
+- Bits 2-0: reserved and required to be zero.
+
+The extended operation selector is:
+
+| Selector | Instruction | Operation |
+|---|---|---|
+| 0 | SHL | Logical shift left |
+| 1 | SHR | Logical shift right |
+| 2 | SAR | Arithmetic shift right |
+| 3 | ROL | Rotate left |
+| 4 | ROR | Rotate right |
+| 5 | NOT | Bitwise inversion |
+| 6 | MUL | Multiplication |
+| 7 | DIV | Unsigned division |
+
+For binary register operations, the destination register is also the first operand.
+
+Examples:
+
+- `SHL R1, R2`: shift R1 left by the amount in R2.
+- `MUL R1, R2`: multiply R1 by R2 and store the result in R1.
+- `NOT R1`: invert every bit in R1.
 
 ## 3. Opcode Table
 
@@ -107,166 +120,57 @@ The offset is measured in instructions, not bytes.
 | 0xC | BEQ | B | Branch if equal |
 | 0xD | BNE | B | Branch if not equal |
 | 0xE | CMP | R | Compare registers |
-| 0xF | EXT | Reserved | Extended instruction space |
+| 0xF | EXT | EXT | Extended ALU operations |
 
 ## 4. Instruction Semantics
 
-### NOP
-
-Does not modify architectural state.
-
-### HALT
-
-Stops normal instruction execution until reset.
-
-### MOV
-
-Copies the source register into the destination register.
-
-MOV Rd, Rs
-
-Rd = Rs
-
-### ADD
-
-Adds the source register to the destination register.
-
-ADD Rd, Rs
-
-Rd = Rd + Rs
-
-Updates Z, C, N and V.
-
-### SUB
-
-Subtracts the source register from the destination register.
-
-SUB Rd, Rs
-
-Rd = Rd - Rs
-
-Updates Z, C, N and V.
-
-### AND
-
-Performs a bitwise AND operation.
-
-AND Rd, Rs
-
-Rd = Rd & Rs
-
-Updates Z and N. Clears C and V.
-
-### OR
-
-Performs a bitwise OR operation.
-
-OR Rd, Rs
-
-Rd = Rd | Rs
-
-Updates Z and N. Clears C and V.
-
-### XOR
-
-Performs a bitwise XOR operation.
-
-XOR Rd, Rs
-
-Rd = Rd ^ Rs
-
-Updates Z and N. Clears C and V.
-
-### ADDI
-
-Adds a signed immediate value to a register.
-
-ADDI Rd, Immediate
-
-Rd = Rd + SignExtendedImmediate
-
-Updates Z, C, N and V.
-
-### LD
-
-Loads one byte from memory.
-
-LD Rd, [Rb + Offset]
-
-Rd = Memory[Rb + Offset]
-
-### ST
-
-Stores one byte into memory.
-
-ST Rs, [Rb + Offset]
-
-Memory[Rb + Offset] = Rs
-
-### JMP
-
-Performs an unconditional relative jump.
-
-JMP Offset
-
-PC = PC_after_fetch + (SignExtendedOffset * 2)
-
-### BEQ
-
-Branches when the Zero flag is set.
-
-BEQ Offset
-
-If Z == 1:
-    PC = PC_after_fetch + (SignExtendedOffset * 2)
-
-### BNE
-
-Branches when the Zero flag is clear.
-
-BNE Offset
-
-If Z == 0:
-    PC = PC_after_fetch + (SignExtendedOffset * 2)
-
-### CMP
-
-Compares two registers by performing subtraction without storing
-the result.
-
-CMP Rd, Rs
-
-Flags = Rd - Rs
-
-Updates Z, C, N and V.
-
-### EXT
-
-Reserved for future extended instructions.
-
-Execution of an unsupported EXT encoding must be treated as an
-illegal instruction.
-
-## 5. Flag Definitions
-
-### Zero (Z)
-
-Set when the operation result is zero.
-
-### Carry (C)
-
-For addition, set when the unsigned result exceeds 255.
-
-For subtraction, set when no borrow occurs.
-
-### Negative (N)
-
-Set when bit 7 of the 8-bit result is 1.
-
-### Overflow (V)
-
-Set when signed arithmetic produces a result outside the range
--128 to 127.
+### Arithmetic and logical instructions
+
+- `ADD Rd, Rs`: `Rd = Rd + Rs`
+- `SUB Rd, Rs`: `Rd = Rd - Rs`
+- `AND Rd, Rs`: `Rd = Rd & Rs`
+- `OR Rd, Rs`: `Rd = Rd | Rs`
+- `XOR Rd, Rs`: `Rd = Rd ^ Rs`
+- `ADDI Rd, Immediate`: add a signed immediate to the destination register.
+- `MOV Rd, Rs`: copy the source register.
+- `CMP Rd, Rs`: compare registers without storing the subtraction result.
+
+### Memory instructions
+
+- `LD Rd, [Rb + Offset]`: load one byte from memory.
+- `ST Rs, [Rb + Offset]`: store one byte in memory.
+
+### Control-flow instructions
+
+- `JMP Offset`: unconditional relative jump.
+- `BEQ Offset`: branch when the Zero flag is set.
+- `BNE Offset`: branch when the Zero flag is clear.
+- `HALT`: stop normal execution until reset.
+- `NOP`: do not modify architectural state.
+
+### Extended ALU instructions
+
+- `SHL Rd, Rs`: logical left shift.
+- `SHR Rd, Rs`: logical right shift.
+- `SAR Rd, Rs`: arithmetic right shift.
+- `ROL Rd, Rs`: rotate left.
+- `ROR Rd, Rs`: rotate right.
+- `NOT Rd`: bitwise inversion.
+- `MUL Rd, Rs`: multiplication.
+- `DIV Rd, Rs`: unsigned division.
+
+For division by zero, behavior must be verified against the current ALU implementation before relying on a result.
+
+## 5. Processor Flags
+
+| Flag | Description |
+|---|---|
+| Z | Set when the result is zero |
+| C | Carry or no-borrow indicator |
+| N | Set when the most significant result bit is 1 |
+| V | Signed arithmetic overflow |
+
+For subtraction, C is set when no borrow occurs.
 
 ## 6. Instruction Byte Order
 
@@ -276,15 +180,13 @@ The most significant byte is stored at the lower memory address.
 
 Example:
 
-Instruction: 0x3120
+Instruction: `0x3120`
 
-Memory[0x0000] = 0x31
-Memory[0x0001] = 0x20
+- Memory[0x0000] = `0x31`
+- Memory[0x0001] = `0x20`
 
 ## 7. Reserved Encodings
 
 Reserved bits must be zero.
 
-Invalid encodings must not silently execute as valid instructions.
-
-The control unit will detect unsupported instructions.
+Unsupported or invalid encodings must not silently execute as valid instructions. The control unit is responsible for detecting illegal instructions.

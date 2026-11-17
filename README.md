@@ -1,67 +1,155 @@
-# BINARY LAB
+﻿# BINARY LAB
 
-A custom 8-bit processor designed from scratch using SystemVerilog.
+BINARY LAB is a computer architecture and binary computing project built around a custom 8-bit processor.
 
-## Project Overview
+The project combines a C assembler, a SystemVerilog CPU, binary program execution, a WebAssembly binary core, and a browser-based learning interface.
 
-BINARY LAB is a computer architecture project focused on designing,
-implementing, simulating, and verifying a custom 8-bit CPU.
+## Project Components
 
-The processor will be described in SystemVerilog and tested through
-digital circuit simulation.
+### 1. SystemVerilog CPU
 
-A custom assembler written in C will translate assembly programs
-into binary machine code.
+A custom 8-bit processor with:
 
-## Architecture
+- Eight general-purpose 8-bit registers
+- 16-bit instructions
+- Separate instruction and data memories
+- Arithmetic and logical operations
+- Branching and memory instructions
+- Extended ALU instructions: SHL, SHR, SAR, ROL, ROR, NOT, MUL, DIV
+- Multi-cycle control unit
 
-- Custom 8-bit CPU
-- Custom Instruction Set Architecture (ISA)
-- Arithmetic Logic Unit (ALU)
-- Register File
-- Control Unit
-- Program Counter
-- Instruction and Data Memory
-- Machine Code Execution
-- Clock-driven execution
-- Hardware verification through testbenches
+### 2. C Assembler
 
-## Technology Stack
+The assembler translates BINARY LAB assembly programs into machine-code binaries.
 
-- SystemVerilog
-- C
-- Icarus Verilog
-- GTKWave
-- Verilator
-- Yosys
-- GNU Make
+Source code:
+
+- `assembler/include/`
+- `assembler/src/`
+
+### 3. WebAssembly Binary Core
+
+The WebAssembly module provides low-level binary operations to the browser interface.
+
+Runtime assets:
+
+- `web/public/binary-core.wasm`
+- `web/public/binary-core.bits`
+
+### 4. Browser Interface
+
+The local browser interface provides:
+
+1. Binary Encoder
+2. Binary Decoder
+3. ASCII Explorer
+4. Bit Operations
+5. Binary Challenges
+
+The browser interface uses the WebAssembly core. CPU execution is implemented separately by the SystemVerilog processor and its simulation runner.
+
+## Requirements
+
+- Windows
+- PowerShell
+- MSYS2 UCRT64 toolchain
+- GCC
+- Icarus Verilog (`iverilog` and `vvp`)
+
+The scripts expect the MSYS2 UCRT64 binaries at:
+
+`C:\msys64\ucrt64\bin`
+
+## Build the Console Application
+
+Run:
+
+```powershell
+.\scripts\build.ps1
+```
+
+The generated executable is placed in `build\BinaryLab.exe`.
+
+Run it with:
+
+```powershell
+.\build\BinaryLab.exe
+```
+
+## Run the Browser Interface and Local CPU API
+
+Run:
+
+```powershell
+.\scripts\start-local.ps1
+```
+
+Open:
+
+`http://localhost:3000`
+
+The local server builds the assembler and CPU simulation runner and serves the browser interface.
+
+## Build and Run the Assembler
+
+Build the assembler:
+
+```powershell
+.\scripts\build-assembler.ps1
+```
+
+Assemble a program:
+
+```powershell
+.\scripts\assemble.ps1 -InputFile "programs\examples\extended_isa.asm"
+```
+
+## Run the Test Suite
+
+```powershell
+.\scripts\test.ps1
+```
+
+The test script builds the assembler and runs the configured unit and integration tests.
+
+## Extended ISA Example
+
+Source:
+
+`programs/examples/extended_isa.asm`
+
+The example exercises shifts, arithmetic shifts, rotations, bitwise inversion, multiplication, division, and HALT on the SystemVerilog CPU.
 
 ## Project Structure
 
-- rtl/: hardware implementation
-- assembler/: custom assembler written in C
-- programs/: assembly examples and binary programs
-- testbench/: hardware verification
-- simulation/: simulation outputs and waveforms
-- synthesis/: synthesis scripts and reports
-- docs/: architecture and technical documentation
-- scripts/: development automation
+```text
+BINARY-LAB/
+├── assembler/
+│   ├── include/
+│   └── src/
+├── docs/
+├── programs/
+│   └── examples/
+├── rtl/
+│   ├── alu/
+│   ├── bus/
+│   ├── control/
+│   ├── cpu/
+│   ├── io/
+│   ├── memory/
+│   └── registers/
+├── scripts/
+├── src/
+├── testbench/
+│   ├── integration/
+│   └── unit/
+└── web/
+    └── public/
+```
 
-## Development Goals
+## Documentation
 
-1. Define the processor architecture.
-2. Design the Instruction Set Architecture.
-3. Implement the ALU and register file.
-4. Implement the control unit.
-5. Integrate the CPU.
-6. Develop the assembler.
-7. Execute binary programs.
-8. Verify the processor using automated testbenches.
-9. Analyze synthesis results.
-10. Prepare the design for possible FPGA deployment.
-
-## Hardware Requirements
-
-No physical hardware is required for development or simulation.
-
-FPGA deployment is an optional future extension.
+- `docs/architecture.md`: processor architecture.
+- `docs/isa.md`: instruction formats, opcodes, and instruction semantics.
+- `docs/memory-bus.md`: memory bus documentation.
+- `docs/toolchain.md`: toolchain documentation.

@@ -1,4 +1,3 @@
-
 #ifndef BINARY_LAB_H
 #define BINARY_LAB_H
 
@@ -48,7 +47,8 @@ typedef enum {
     OPCODE_JMP  = 0xB,
     OPCODE_BEQ  = 0xC,
     OPCODE_BNE  = 0xD,
-    OPCODE_CMP  = 0xE
+    OPCODE_CMP  = 0xE,
+    OPCODE_EXT  = 0xF
 } Opcode;
 
 typedef enum {
