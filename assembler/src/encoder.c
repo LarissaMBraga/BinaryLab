@@ -238,6 +238,65 @@ bool encode_instruction(
     uint8_t source;
     int32_t immediate;
 
+    if (definition->opcode == OPCODE_EXT) {
+        uint8_t subopcode;
+
+        if (strcmp(instruction->mnemonic, "SHL") == 0) {
+            subopcode = 0;
+        } else if (strcmp(instruction->mnemonic, "SHR") == 0) {
+            subopcode = 1;
+        } else if (strcmp(instruction->mnemonic, "SAR") == 0) {
+            subopcode = 2;
+        } else if (strcmp(instruction->mnemonic, "ROL") == 0) {
+            subopcode = 3;
+        } else if (strcmp(instruction->mnemonic, "ROR") == 0) {
+            subopcode = 4;
+        } else if (strcmp(instruction->mnemonic, "NOT") == 0) {
+            subopcode = 5;
+        } else if (strcmp(instruction->mnemonic, "MUL") == 0) {
+            subopcode = 6;
+        } else if (strcmp(instruction->mnemonic, "DIV") == 0) {
+            subopcode = 7;
+        } else {
+            set_error(
+                error,
+                instruction->line_number,
+                "Unsupported extended instruction: %s",
+                instruction->mnemonic
+            );
+            return false;
+        }
+
+        if (!parse_register(instruction->operands[0], &destination)) {
+            set_error(
+                error,
+                instruction->line_number,
+                "Invalid destination register: %s",
+                instruction->operands[0]
+            );
+            return false;
+        }
+
+        if (strcmp(instruction->mnemonic, "NOT") == 0) {
+            source = destination;
+        } else if (!parse_register(instruction->operands[1], &source)) {
+            set_error(
+                error,
+                instruction->line_number,
+                "Invalid source register: %s",
+                instruction->operands[1]
+            );
+            return false;
+        }
+
+        encoded |= (uint16_t)(subopcode << 9);
+        encoded |= (uint16_t)(destination << 6);
+        encoded |= (uint16_t)(source << 3);
+
+        *machine_code = encoded;
+        return true;
+    }
+
     switch (definition->format) {
         case FORMAT_R:
             if (definition->operand_count == 0) {

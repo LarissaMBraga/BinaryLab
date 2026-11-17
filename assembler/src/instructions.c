@@ -19,7 +19,15 @@ static const InstructionDefinition instruction_set[] = {
     {"JMP",  OPCODE_JMP,  FORMAT_B, 1},
     {"BEQ",  OPCODE_BEQ,  FORMAT_B, 1},
     {"BNE",  OPCODE_BNE,  FORMAT_B, 1},
-    {"CMP",  OPCODE_CMP,  FORMAT_R, 2}
+    {"CMP",  OPCODE_CMP,  FORMAT_R, 2},
+    {"SHL",  OPCODE_EXT,  FORMAT_R, 2},
+    {"SHR",  OPCODE_EXT,  FORMAT_R, 2},
+    {"SAR",  OPCODE_EXT,  FORMAT_R, 2},
+    {"ROL",  OPCODE_EXT,  FORMAT_R, 2},
+    {"ROR",  OPCODE_EXT,  FORMAT_R, 2},
+    {"NOT",  OPCODE_EXT,  FORMAT_R, 1},
+    {"MUL",  OPCODE_EXT,  FORMAT_R, 2},
+    {"DIV",  OPCODE_EXT,  FORMAT_R, 2}
 };
 
 static const size_t instruction_set_count =

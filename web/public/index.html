@@ -1,0 +1,279 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Binary Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#090d16;--panel:#111a29;--border:#29374d;--green:#45e0b1;--muted:#91a0b8;--text:#e8edf7}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Consolas,monospace}
+header{padding:28px 6%;border-bottom:1px solid var(--border)}
+h1{margin:0;font-size:28px;letter-spacing:3px}
+h1 span{color:var(--green)}
+header p{color:var(--muted)}
+#status{font-size:12px;color:var(--green)}
+main{max-width:1150px;margin:35px auto;padding:0 22px}
+.modules{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:13px}
+.module,.panel{background:var(--panel);border:1px solid var(--border);border-radius:9px}
+.module{padding:18px;color:var(--text);text-align:left;cursor:pointer;font:inherit;min-height:105px}
+.module:hover,.module.active{border-color:var(--green)}
+.module strong{display:block;color:var(--green);margin-bottom:10px}
+.module small{color:var(--muted);line-height:1.5}
+.panel{margin-top:20px;padding:25px;min-height:330px}
+p{color:var(--muted);line-height:1.6}
+label{display:block;margin:18px 0 8px;color:var(--muted)}
+input,textarea,select{width:100%;max-width:650px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;color:var(--text);font:inherit}
+textarea{min-height:90px;resize:vertical}
+.action{display:inline-block;margin:15px 8px 0 0;background:var(--green);color:#07120f;border:0;border-radius:6px;padding:12px 19px;font:inherit;font-weight:bold;cursor:pointer}
+.output{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:20px;padding:17px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--green);min-height:55px;line-height:1.7}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:15px;max-width:650px}
+.stat{display:inline-block;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin:5px}
+.stat strong{color:var(--green)}
+footer{max-width:1150px;margin:25px auto;padding:0 22px 30px;color:var(--muted);font-size:12px}
+@media(max-width:600px){.panel{padding:18px}.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<h1>BINARY <span>LAB</span></h1>
+<p>Binary instructions. Local execution.</p>
+<div id="status">Loading WebAssembly binary core...</div>
+</header>
+<main>
+<nav class="modules">
+<button class="module active" onclick="openModule('encoder',this)"><strong>Binary Encoder</strong><small>Encode text bytes into bits.</small></button>
+<button class="module" onclick="openModule('decoder',this)"><strong>Binary Decoder</strong><small>Decode bits into text bytes.</small></button>
+<button class="module" onclick="openModule('ascii',this)"><strong>ASCII Explorer</strong><small>Explore character code bits.</small></button>
+<button class="module" onclick="openModule('bits',this)"><strong>Bit Operations</strong><small>AND, OR, XOR and NOT.</small></button>
+<button class="module" onclick="openModule('challenges',this)"><strong>Binary Challenges</strong><small>Validate binary answers.</small></button>
+</nav>
+<section class="panel" id="workspace">
+<h2>Welcome to Binary Lab</h2>
+<p>The binary core is responsible for the module calculations.</p>
+<div class="stat">CORE: <strong>WASM</strong></div>
+<div class="stat">INSTRUCTIONS: <strong>BINARY</strong></div>
+<div class="output">01000010 01001001 01001110 01000001 01010010 01011001</div>
+</section>
+</main>
+<footer>Binary Lab · WebAssembly · Local execution</footer>
+<script>
+"use strict";
+
+let core = null;
+let challengeIndex = 0;
+
+WebAssembly.instantiateStreaming(fetch("/binary-core.wasm"))
+.then(result => {
+    core = result.instance.exports;
+    document.getElementById("status").textContent =
+        "● Binary core loaded · 7 exported functions";
+})
+.catch(error => {
+    document.getElementById("status").textContent = "● Binary core failed to load";
+    console.error(error);
+});
+
+function requireCore() {
+    if (!core) throw new Error("The binary core has not loaded.");
+    return core;
+}
+
+function bitsOf(value, width) {
+    const wasm = requireCore();
+    let result = "";
+    for (let index = width - 1; index >= 0; index--) {
+        result += wasm.getBit(value, index).toString();
+    }
+    return result;
+}
+
+function byteFromBits(bits) {
+    const wasm = requireCore();
+    let value = 0;
+    for (const bit of bits) {
+        value = wasm.pushBit(value, bit === "1" ? 1 : 0);
+    }
+    return value;
+}
+
+function openModule(name, button) {
+    document.querySelectorAll(".module").forEach(item => item.classList.remove("active"));
+    if (button) button.classList.add("active");
+
+    const views = {
+        encoder: `
+            <h2>01 / Binary Encoder</h2>
+            <p>Convert UTF-8 text bytes into binary using the WebAssembly bit extraction instruction.</p>
+            <label>Text input</label>
+            <textarea id="encoder-input" placeholder="Type something..."></textarea>
+            <button class="action" onclick="encodeText()">ENCODE</button>
+            <div class="output" id="encoder-output">Waiting for input.</div>`,
+        decoder: `
+            <h2>02 / Binary Decoder</h2>
+            <p>Reconstruct bytes from binary groups using WebAssembly bit assembly instructions.</p>
+            <label>Binary input (8 bits per byte)</label>
+            <textarea id="decoder-input" placeholder="01001000 01101001"></textarea>
+            <button class="action" onclick="decodeText()">DECODE</button>
+            <div class="output" id="decoder-output">Waiting for input.</div>`,
+        ascii: `
+            <h2>03 / ASCII Explorer</h2>
+            <p>Inspect the binary representation of a character code.</p>
+            <label>Character</label>
+            <input id="ascii-input" maxlength="2" placeholder="A">
+            <button class="action" onclick="exploreAscii()">EXPLORE</button>
+            <div class="output" id="ascii-output">Waiting for input.</div>`,
+        bits: `
+            <h2>04 / Bit Operations</h2>
+            <p>All four operations are executed by WebAssembly instructions.</p>
+            <div class="row">
+                <div><label>First 8-bit value</label><input id="bits-a" maxlength="8" placeholder="10101010"></div>
+                <div><label>Second 8-bit value</label><input id="bits-b" maxlength="8" placeholder="11001100"></div>
+            </div>
+            <label>Operation</label>
+            <select id="bits-operation">
+                <option value="and">AND</option>
+                <option value="or">OR</option>
+                <option value="xor">XOR</option>
+                <option value="not">NOT (first value)</option>
+            </select>
+            <button class="action" onclick="executeBits()">EXECUTE</button>
+            <div class="output" id="bits-output">Waiting for input.</div>`,
+        challenges: `
+            <h2>05 / Binary Challenges</h2>
+            <p>Convert this decimal number into an 8-bit binary value.</p>
+            <div class="stat">DECIMAL: <strong id="challenge-number">13</strong></div>
+            <label>Your answer</label>
+            <input id="challenge-answer" maxlength="8" placeholder="00001101">
+            <button class="action" onclick="checkChallenge()">CHECK</button>
+            <button class="action" onclick="nextChallenge()">NEXT</button>
+            <div class="output" id="challenge-output">Ready when you are.</div>`
+    };
+    document.getElementById("workspace").innerHTML = views[name];
+}
+
+function encodeText() {
+    try {
+        const bytes = new TextEncoder().encode(document.getElementById("encoder-input").value);
+        const result = Array.from(bytes, byte => bitsOf(byte, 8));
+        document.getElementById("encoder-output").textContent =
+            result.length ? result.join(" ") : "Enter some text first.";
+    } catch (error) {
+        document.getElementById("encoder-output").textContent = error.message;
+    }
+}
+
+function decodeText() {
+    const output = document.getElementById("decoder-output");
+    const input = document.getElementById("decoder-input").value.trim();
+
+    if (!input) {
+        output.textContent = "Enter a binary sequence.";
+        return;
+    }
+
+    const groups = input.split(/\s+/);
+    if (!groups.every(group => /^[01]{8}$/.test(group))) {
+        output.textContent = "Invalid input. Each group must contain exactly 8 bits.";
+        return;
+    }
+
+    try {
+        const bytes = groups.map(byteFromBits);
+        output.textContent = new TextDecoder("utf-8", {fatal:true}).decode(new Uint8Array(bytes));
+    } catch (error) {
+        output.textContent = "Invalid UTF-8 sequence or binary core error: " + error.message;
+    }
+}
+
+function exploreAscii() {
+    const output = document.getElementById("ascii-output");
+    const chars = Array.from(document.getElementById("ascii-input").value);
+
+    if (chars.length !== 1) {
+        output.textContent = "Enter exactly one character.";
+        return;
+    }
+
+    try {
+        const code = chars[0].codePointAt(0);
+        const width = Math.max(8, code.toString(2).length);
+        output.textContent =
+            "Character: " + chars[0] +
+            "\nDecimal: " + code +
+            "\nBinary: " + bitsOf(code, width) +
+            "\nHexadecimal: " + code.toString(16).toUpperCase();
+    } catch (error) {
+        output.textContent = error.message;
+    }
+}
+
+function executeBits() {
+    const output = document.getElementById("bits-output");
+    const first = document.getElementById("bits-a").value;
+    const second = document.getElementById("bits-b").value;
+    const operation = document.getElementById("bits-operation").value;
+
+    if (!/^[01]{8}$/.test(first)) {
+        output.textContent = "First value must contain exactly 8 bits.";
+        return;
+    }
+    if (operation !== "not" && !/^[01]{8}$/.test(second)) {
+        output.textContent = "Second value must contain exactly 8 bits.";
+        return;
+    }
+
+    try {
+        const wasm = requireCore();
+        const a = byteFromBits(first);
+        const b = operation === "not" ? 0 : byteFromBits(second);
+        const result = wasm[operation](a, b) & 255;
+
+        output.textContent =
+            "Operation: " + operation.toUpperCase() +
+            "\nInput A: " + first +
+            (operation === "not" ? "" : "\nInput B: " + second) +
+            "\nResult: " + bitsOf(result, 8) +
+            "\nDecimal: " + result;
+    } catch (error) {
+        output.textContent = error.message;
+    }
+}
+
+const challenges = [13, 25, 42, 64, 100, 170, 255];
+
+function showChallenge() {
+    document.getElementById("challenge-number").textContent = challenges[challengeIndex];
+    document.getElementById("challenge-answer").value = "";
+    document.getElementById("challenge-output").textContent = "Ready when you are.";
+}
+
+function checkChallenge() {
+    const answer = document.getElementById("challenge-answer").value;
+    const output = document.getElementById("challenge-output");
+
+    if (!/^[01]{8}$/.test(answer)) {
+        output.textContent = "Enter exactly 8 binary digits.";
+        return;
+    }
+
+    try {
+        const actual = byteFromBits(answer);
+        const expected = challenges[challengeIndex];
+        output.textContent = requireCore().equals(actual, expected)
+            ? "CORRECT! Challenge solved."
+            : "Not quite. Try again.";
+    } catch (error) {
+        output.textContent = error.message;
+    }
+}
+
+function nextChallenge() {
+    challengeIndex = (challengeIndex + 1) % challenges.length;
+    showChallenge();
+}
+
+openModule("encoder", document.querySelector(".module"));
+</script>
+</body>
+</html>

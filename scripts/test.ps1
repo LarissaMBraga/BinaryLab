@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
@@ -96,7 +96,7 @@ foreach ($program in $cpuPrograms) {
 
 [System.IO.File]::WriteAllBytes(
     (Join-Path $root "build/invalid_opcode.bin"),
-    [byte[]](0xF0, 0x00)
+    [byte[]](0x00, 0x01)
 )
 
 $cpuSources = @(
